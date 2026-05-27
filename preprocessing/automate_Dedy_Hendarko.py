@@ -21,7 +21,7 @@ def preprocess_data(df):
     df_clean = df_clean.astype({col: 'int64' for col in df_clean.select_dtypes(include='bool').columns})
 
   # 3. Pisahkan Fitur dan Target
-  if 'Machine failure in df_clean.columns':
+  if 'Machine failure' in df_clean.columns:
     X = df_clean.drop(columns=['Machine failure'])
     y = df_clean['Machine failure']
   else:
