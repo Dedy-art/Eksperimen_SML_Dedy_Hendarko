@@ -36,8 +36,8 @@ jobs:
         DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
         DAGSHUB_REPO_NAME: "predictive-maintenance-mlflow"
       run: |
-        # Menggunakan ./MLProject agar MLflow membacanya sebagai path folder lokal, bukan remote Git URL
-        mlflow run ./MLProject --env-manager local --experiment-name "Predictive_Maintenance_CI"
+        # Menggunakan GIT_DIR=/dev/null memaksa MLflow mengabaikan deteksi Git repository agar tidak error 128
+        GIT_DIR=/dev/null mlflow run ./MLProject --env-manager local --experiment-name "Predictive_Maintenance_CI"
 
     - name: Upload to GitHub Artifacts (Skilled Target)
       uses: actions/upload-artifact@v4
