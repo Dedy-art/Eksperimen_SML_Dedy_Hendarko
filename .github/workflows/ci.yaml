@@ -1,0 +1,66 @@
+name: Machine Learning Workflow CI
+
+on:
+  push:
+    branches:
+      - main
+  workflow_dispatch:
+
+jobs:
+  build-and-train:
+    runs-on: ubuntu-latest
+
+    steps:
+    - name: Check out repository
+      uses: actions/checkout@v4
+
+    - name: Set up Python
+      uses: actions/setup-python@v5
+      with:
+        python-version: '3.10' # Menggunakan 3.10 yang sangat stabil untuk MLflow & Docker build
+
+    - name: Check Env
+      run: |
+        echo "Memeriksa ketersediaan kredensial rahasia..."
+        if [ -z "${{ secrets.DAGSHUB_TOKEN }}" ]; then echo "WARNING: DAGSHUB_TOKEN kosong"; fi
+        if [ -z "${{ secrets.DOCKERHUB_TOKEN }}" ]; then echo "WARNING: DOCKERHUB_TOKEN kosong"; fi
+
+    - name: Install dependencies
+      run: |
+        python -m pip install --upgrade pip
+        pip install mlflow dagshub scikit-learn pandas numpy matplotlib seaborn
+
+    - name: Run mlflow project
+      env:
+        DAGSHUB_USERNAME: ${{ secrets.DAGSHUB_USERNAME }}
+        DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
+        DAGSHUB_REPO_NAME: "predictive-maintenance-mlflow"
+      run: |
+        # Menjalankan MLflow Project dengan mengeksport lokasi model ke lokal folder 'my_model'
+        mlflow run MLProject --no-conda --experiment-name "Predictive_Maintenance_CI"
+
+    - name: Upload to GitHub Artifacts (Skilled Target)
+      uses: actions/upload-artifact@v4
+      with:
+        name: model-artifacts
+        path: |
+          CI_Classification_Report.txt
+          CI_Confusion_Matrix.png
+        # Note: Pastikan file .txt dan .png ini memang di-generate oleh modelling.py Anda di root folder
+
+    - name: Log in to Docker Hub
+      uses: docker/login-action@v3
+      with:
+        username: ${{ secrets.DOCKERHUB_USERNAME }}
+        password: ${{ secrets.DOCKERHUB_TOKEN }}
+
+    - name: Build Docker Image (Advanced Target)
+      run: |
+        # Kita ambil folder model lokal hasil tracking mlflow
+        # Perintah ini membangun docker image langsung dengan format nama Docker Hub Mas Dedy
+        mlflow models build-docker -m "mlruns/0/$(ls mlruns/0/ | grep -v 'meta.yaml' | head -n 1)/artifacts/model" -n "${{ secrets.DOCKERHUB_USERNAME }}/predictive-maintenance-model:latest" --env-manager local
+
+    - name: Push Docker Image
+      run: |
+        # Mengunggah Docker Image yang sudah dibangun dengan nama yang sesuai ke Docker Hub
+        docker push "${{ secrets.DOCKERHUB_USERNAME }}/predictive-maintenance-model:latest"
