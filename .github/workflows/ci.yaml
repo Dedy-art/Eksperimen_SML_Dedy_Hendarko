@@ -30,7 +30,7 @@ jobs:
         DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
         DAGSHUB_REPO_NAME: "predictive-maintenance-mlflow"
       run: |
-        # Kita jalankan langsung python-nya untuk menghindari bug 'mlflow run' di GitHub Actions
+        # Menjalankan script python yang sudah diperbaiki
         python MLProject/modelling.py
 
     - name: Upload to GitHub Artifacts (Skilled Target)
@@ -49,9 +49,10 @@ jobs:
 
     - name: Build Docker Image (Advanced Target)
       run: |
-        # Membangun Docker Image langsung dari model lokal hasil training yang tercatat di mlruns
-        mlflow models build-docker -m "mlruns/0/$(ls mlruns/0/ | grep -v 'meta.yaml' | head -n 1)/artifacts/model" -n "${{ secrets.DOCKERHUB_USERNAME }}/predictive-maintenance-model:latest" --env-manager local
+        # Membangun Docker Image langsung menggunakan folder model lokal 'fixed_local_model' yang di-generate modelling.py
+        mlflow models build-docker -m "fixed_local_model" -n "${{ secrets.DOCKERHUB_USERNAME }}/predictive-maintenance-model:latest" --env-manager local
 
     - name: Push Docker Image
       run: |
+        # Mengunggah Docker Image ke Docker Hub resmi milik Mas Dedy
         docker push "${{ secrets.DOCKERHUB_USERNAME }}/predictive-maintenance-model:latest"
