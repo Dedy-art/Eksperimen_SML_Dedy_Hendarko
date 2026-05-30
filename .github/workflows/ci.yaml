@@ -17,7 +17,7 @@ jobs:
     - name: Set up Python
       uses: actions/setup-python@v5
       with:
-        python-version: '3.10' # Menggunakan 3.10 yang sangat stabil untuk MLflow & Docker build
+        python-version: '3.10'
 
     - name: Check Env
       run: |
@@ -36,8 +36,8 @@ jobs:
         DAGSHUB_TOKEN: ${{ secrets.DAGSHUB_TOKEN }}
         DAGSHUB_REPO_NAME: "predictive-maintenance-mlflow"
       run: |
-        # Menjalankan MLflow Project dengan mengeksport lokasi model ke lokal folder 'my_model'
-        mlflow run MLProject --no-conda --experiment-name "Predictive_Maintenance_CI"
+        # Mengubah --no-conda menjadi --env-manager local agar kompatibel dengan MLflow versi terbaru
+        mlflow run MLProject --env-manager local --experiment-name "Predictive_Maintenance_CI"
 
     - name: Upload to GitHub Artifacts (Skilled Target)
       uses: actions/upload-artifact@v4
@@ -46,7 +46,6 @@ jobs:
         path: |
           CI_Classification_Report.txt
           CI_Confusion_Matrix.png
-        # Note: Pastikan file .txt dan .png ini memang di-generate oleh modelling.py Anda di root folder
 
     - name: Log in to Docker Hub
       uses: docker/login-action@v3
@@ -56,11 +55,9 @@ jobs:
 
     - name: Build Docker Image (Advanced Target)
       run: |
-        # Kita ambil folder model lokal hasil tracking mlflow
-        # Perintah ini membangun docker image langsung dengan format nama Docker Hub Mas Dedy
+        # Membangun docker image menggunakan model lokal hasil tracking
         mlflow models build-docker -m "mlruns/0/$(ls mlruns/0/ | grep -v 'meta.yaml' | head -n 1)/artifacts/model" -n "${{ secrets.DOCKERHUB_USERNAME }}/predictive-maintenance-model:latest" --env-manager local
 
     - name: Push Docker Image
       run: |
-        # Mengunggah Docker Image yang sudah dibangun dengan nama yang sesuai ke Docker Hub
         docker push "${{ secrets.DOCKERHUB_USERNAME }}/predictive-maintenance-model:latest"
