@@ -62,4 +62,4 @@ if __name__ == "__main__":
     print(f"Sukses! Data Siap latih & disimpan di: {output_file}")
   else:
     print(f"File {input_file} tidak ditemukan. Otomatisasi siap digunakan dalam workflow.")
-
+# update struktur
